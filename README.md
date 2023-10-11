@@ -1,305 +1,189 @@
 # EarthQuake
-Earthquake Prediction
-It is well known that if a disaster has happened in a region, it is likely to happen there again. Some regions really have frequent earthquakes, but this is just a comparative quantity compared to other regions. So, predicting the earthquake with Date and Time, Latitude and Longitude from previous data is not a trend which follows like other things, it is natural occuring.
 
-Import the necessary libraries required for buidling the model and data analysis of the earthquakes.
+The Earthquake Dataset can be used to build machine learning models to predict earthquakes or to better understand earthquake patterns and characteristics. Here are a few possible ways machine learning models can be used with this dataset:
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+1.Earthquake prediction: You can use this dataset to build a model that predicts when and where an earthquake might occur based on past earthquake data. You could use techniques such as time series analysis, clustering, or classification to identify patterns in the data and make predictions.
+2.Magnitude prediction: You can use this dataset to build a model that predicts the magnitude of an earthquake based on other factors such as location, depth, or the number of seismic stations that recorded the earthquake. You could use regression techniques to build this model.
+3.Risk assessment: You can use this dataset to identify areas that are at higher risk of earthquakes based on historical earthquake data. You could use clustering or classification techniques to identify patterns in the data and identify areas with similar characteristics.
+4.Anomaly detection: You can use this dataset to detect anomalies or outliers in the data, which could represent earthquakes that are unusual or unexpected. You could use techniques such as clustering or classification to identify patterns in the data and detect anomalies.
+5.Data visualization: You can use this dataset to create visualizations of earthquake data, which could help you identify patterns and relationships in the data. You could use techniques such as scatter plots, heat maps, or geographic information systems (GIS) to visualize the data.
 
-import os
-print(os.listdir("../input"))
+These are just a few examples of the many ways that machine learning models can be used with the SOCR Earthquake Dataset. The specific approach you take will depend on your research question and the goals of your analysis. In this project we focus mainly on Earthquake prediction and Magnitude prediction.
 
-['database.csv']
-Read the data from csv and also columns which are necessary for the model and the column which needs to be predicted.
+*Feature engineering*
+The initial acoustic signal is decomposed into segments with 150000 rows per segment, which suggests that the training dataset has 4194 rows. Features are calculated as aggregations over segments. For more details see, for example, here and here.
 
-data = pd.read_csv("../input/database.csv")
-data.head()
-Date	Time	Latitude	Longitude	Type	Depth	Depth Error	Depth Seismic Stations	Magnitude	Magnitude Type	Magnitude Error	Magnitude Seismic Stations	Azimuthal Gap	Horizontal Distance	Horizontal Error	Root Mean Square	ID	Source	Location Source	Magnitude Source	Status
-0	01/02/1965	13:44:18	19.246	145.616	Earthquake	131.6	NaN	NaN	6.0	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860706	ISCGEM	ISCGEM	ISCGEM	Automatic
-1	01/04/1965	11:29:49	1.863	127.352	Earthquake	80.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860737	ISCGEM	ISCGEM	ISCGEM	Automatic
-2	01/05/1965	18:05:58	-20.579	-173.972	Earthquake	20.0	NaN	NaN	6.2	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860762	ISCGEM	ISCGEM	ISCGEM	Automatic
-3	01/08/1965	18:49:43	-59.076	-23.557	Earthquake	15.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860856	ISCGEM	ISCGEM	ISCGEM	Automatic
-4	01/09/1965	13:32:50	11.938	126.427	Eart
+*Baseline model*
+Before we start with the feature selection, we calculate feature importance as it is explained here and train the baseline model on the 15 most important features.
 
-data.columns
-Index(['Date', 'Time', 'Latitude', 'Longitude', 'Type', 'Depth', 'Depth Error',
-       'Depth Seismic Stations', 'Magnitude', 'Magnitude Type',
-       'Magnitude Error', 'Magnitude Seismic Stations', 'Azimuthal Gap',
-       'Horizontal Distance', 'Horizontal Error', 'Root Mean Square', 'ID',
-       'Source', 'Location Source', 'Magnitude Source', 'Status'],
-      dtype='object')
+from earthquake import config, utils
 
-Figure out the main features from earthquake data and create a object of that features, namely, Date, Time, Latitude, Longitude, Depth, Magnitude.
+# load training set
+data = utils.read_csv(config.path_to_train)
+# create list of features
+features = [column for column in data.columns if column not in ['target', 'seg_id']]
+# display importance
+best_features = utils.feature_importance(data[features], data['target'], n_best=15, n_jobs=8)
+List of 15 most important features.
 
-data = data[['Date', 'Time', 'Latitude', 'Longitude', 'Depth', 'Magnitude']]
-data.head()
-
-
-Earthquake Prediction
-It is well known that if a disaster has happened in a region, it is likely to happen there again. Some regions really have frequent earthquakes, but this is just a comparative quantity compared to other regions. So, predicting the earthquake with Date and Time, Latitude and Longitude from previous data is not a trend which follows like other things, it is natural occuring.
-
-Import the necessary libraries required for buidling the model and data analysis of the earthquakes.
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-import os
-print(os.listdir("../input"))
-['database.csv']
-Read the data from csv and also columns which are necessary for the model and the column which needs to be predicted.
-
-data = pd.read_csv("../input/database.csv")
-data.head()
-Date	Time	Latitude	Longitude	Type	Depth	Depth Error	Depth Seismic Stations	Magnitude	Magnitude Type	Magnitude Error	Magnitude Seismic Stations	Azimuthal Gap	Horizontal Distance	Horizontal Error	Root Mean Square	ID	Source	Location Source	Magnitude Source	Status
-0	01/02/1965	13:44:18	19.246	145.616	Earthquake	131.6	NaN	NaN	6.0	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860706	ISCGEM	ISCGEM	ISCGEM	Automatic
-1	01/04/1965	11:29:49	1.863	127.352	Earthquake	80.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860737	ISCGEM	ISCGEM	ISCGEM	Automatic
-2	01/05/1965	18:05:58	-20.579	-173.972	Earthquake	20.0	NaN	NaN	6.2	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860762	ISCGEM	ISCGEM	ISCGEM	Automatic
-3	01/08/1965	18:49:43	-59.076	-23.557	Earthquake	15.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860856	ISCGEM	ISCGEM	ISCGEM	Automatic
-4	01/09/1965	13:32:50	11.938	126.427	Earthquake	15.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860890	ISCGEM	ISCGEM	ISCGEM	Automatic
-data.columns
-Index(['Date', 'Time', 'Latitude', 'Longitude', 'Type', 'Depth', 'Depth Error',
-       'Depth Seismic Stations', 'Magnitude', 'Magnitude Type',
-       'Magnitude Error', 'Magnitude Seismic Stations', 'Azimuthal Gap',
-       'Horizontal Distance', 'Horizontal Error', 'Root Mean Square', 'ID',
-       'Source', 'Location Source', 'Magnitude Source', 'Status'],
-      dtype='object')
-Figure out the main features from earthquake data and create a object of that features, namely, Date, Time, Latitude, Longitude, Depth, Magnitude.
-
-data = data[['Date', 'Time', 'Latitude', 'Longitude', 'Depth', 'Magnitude']]
-data.head()
-Date	Time	Latitude	Longitude	Depth	Magnitude
-0	01/02/1965	13:44:18	19.246	145.616	131.6	6.0
-1	01/04/1965	11:29:49	1.863	127.352	80.0	5.8
-2	01/05/1965	18:05:58	-20.579	-173.972	20.0	6.2
-3	01/08/1965	18:49:43	-59.076	-23.557	15.0	5.8
-4	01/09/1965	13:32:50	11.938	126.427	15.0	5.8
-Here, the data is random we need to scale according to inputs to the model. In this, we convert given Date and Time to Unix time which is in seconds and a numeral. This can be easily used as input for the network we built.
-
-
-
-import datetime
-import time
-
-timestamp = []
-for d, t in zip(data['Date'], data['Time']):
-    try:
-        ts = datetime.datetime.strptime(d+' '+t, '%m/%d/%Y %H:%M:%S')
-        timestamp.append(time.mktime(ts.timetuple()))
-    except ValueError:
-        # print('ValueError')
-        timestamp.append('ValueError')
-timeStamp = pd.Series(timestamp)
-data['Timestamp'] = timeStamp.values
-
-final_data = data.drop(['Date', 'Time'], axis=1)
-final_data = final_data[final_data.Timestamp != 'ValueError']
-final_data.head()
-Latitude	Longitude	Depth	Magnitude	Timestamp
-0	19.246	145.616	131.6	6.0	-1.57631e+08
-1	1.863	127.352	80.0	5.8	-1.57466e+08
-2	-20.579	-173.972	20.0	6.2	-1.57356e+08
-3	-59.076	-23.557	15.0	5.8	-1.57094e+08
-4	11.938	126.427	15.0	5.8	-1.57026e+08
-
-Visualization
-Here, all the earthquakes from the database in visualized on to the world map which shows clear representation of the locations where frequency of the earthquake will be more.
-
-from mpl_toolkits.basemap import Basemap
-
-m = Basemap(projection='mill',llcrnrlat=-80,urcrnrlat=80, llcrnrlon=-180,urcrnrlon=180,lat_ts=20,resolution='c')
-
-longitudes = data["Longitude"].tolist()
-latitudes = data["Latitude"].tolist()
-#m = Basemap(width=12000000,height=9000000,projection='lcc',
-            #resolution=None,lat_1=80.,lat_2=55,lat_0=80,lon_0=-107.)
-x,y = m(longitudes,latitudes)
-fig = plt.figure(figsize=(12,10))
-plt.title("All affected areas")
-m.plot(x, y, "o", markersize = 2, color = 'blue')
-m.drawcoastlines()
-m.fillcontinents(color='coral',lake_color='aqua')
-m.drawmapboundary()
-m.drawcountries()
-plt.show()
-
-/opt/conda/lib/python3.6/site-packages/mpl_toolkits/basemap/__init__.py:1704: MatplotlibDeprecationWarning: The axesPatch function was deprecated in version 2.1. Use Axes.patch instead.
-  limb = ax.axesPatch
-/opt/conda/lib/python3.6/site-packages/mpl_toolkits/basemap/__init__.py:1707: MatplotlibDeprecationWarning: The axesPatch function was deprecated in version 2.1. Use Axes.patch instead.
-  if limb is not ax.axesPatch:
-
-
-
-
-Splitting the Data
-Firstly, split the data into Xs and ys which are input to the model and output of the model respectively. Here, inputs are TImestamp, Latitude and Longitude and outputs are Magnitude and Depth. Split the Xs and ys into train and test with validation. Training dataset contains 80% and Test dataset contains 20%.
-
-X = final_data[['Timestamp', 'Latitude', 'Longitude']]
-y = final_data[['Magnitude', 'Depth']]
-from sklearn.cross_validation import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-print(X_train.shape, X_test.shape, y_train.shape, X_test.shape)
-
-from sklearn.cross_validation import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-print(X_train.shape, X_test.shape, y_train.shape, X_test.shape)
-(18727, 3) (4682, 3) (18727, 2) (4682, 3)
-/opt/conda/lib/python3.6/site-packages/sklearn/cross_validation.py:41: DeprecationWarning: This module was deprecated in version 0.18 in favor of the model_selection module into which all the refactored classes and functions are moved. Also note that the interface of the new CV iterators are different from that of this module. This module will be removed in 0.20.
-  "This module will be removed in 0.20.", DeprecationWarning)
-Here, we used the RandomForestRegressor model to predict the outputs, we see the strange prediction from this with score above 80% which can be assumed to be best fit but not due to its predicted values.
-
-from sklearn.ensemble import RandomForestRegressor
-
-reg = RandomForestRegressor(random_state=42)
-reg.fit(X_train, y_train)
-reg.predict(X_test)
-/opt/conda/lib/python3.6/site-packages/sklearn/ensemble/weight_boosting.py:29: DeprecationWarning: numpy.core.umath_tests is an internal NumPy module and should not be imported. It will be removed in a future NumPy release.
-  from numpy.core.umath_tests import inner1d
-array([[  5.96,  50.97],
-       [  5.88,  37.8 ],
-       [  5.97,  37.6 ],
-       ...,
-       [  6.42,  19.9 ],
-       [  5.73, 591.55],
-       [  5.68,  33.61]])
-reg.score(X_test, y_test)
-0.8614799631765803
-Earthquake Prediction
-It is well known that if a disaster has happened in a region, it is likely to happen there again. Some regions really have frequent earthquakes, but this is just a comparative quantity compared to other regions. So, predicting the earthquake with Date and Time, Latitude and Longitude from previous data is not a trend which follows like other things, it is natural occuring.
-
-Import the necessary libraries required for buidling the model and data analysis of the earthquakes.
+  Imp | Feature
+ 0.11 | mfcc_5_avg
+ 0.09 | mfcc_15_avg
+ 0.07 | percentile_roll_std_5_window_50
+ 0.06 | percentile_roll_std_10_window_100
+ 0.06 | mfcc_4_avg
+ 0.03 | percentile_roll_std_20_window_500
+ 0.03 | percentile_roll_std_25_window_500
+ 0.02 | percentile_roll_std_25_window_100
+ 0.02 | percentile_roll_std_20_window_1000
+ 0.02 | percentile_roll_std_20_window_10
+ 0.02 | percentile_roll_std_25_window_1000
+ 0.01 | percentile_roll_std_10_window_500
+ 0.01 | percentile_roll_std_10_window_50
+ 0.01 | percentile_roll_std_50_window_50
+ 0.01 | percentile_roll_std_40_window_1000
+We train the model using CatboostRegressor with default parameters and evaluate the performance with a stratified KFold (5 folds) cross-validation.
 
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score
+from catboost import CatBoostRegressor
 
-import os
-print(os.listdir("../input"))
-['database.csv']
-Read the data from csv and also columns which are necessary for the model and the column which needs to be predicted.
+# set output float precision 
+np.set_printoptions(precision=3)
+# init model
+model = CatBoostRegressor(random_seed=0, verbose=False)
+# calculate mae on folds
+mae = cross_val_score(model, data[best_features], data['target'], 
+    cv=5, scoring='neg_mean_absolute_error', n_jobs=8)
+# print the results
+print('folds: {}'.format(abs(mae)))
+print('total: {:.3f}'.format(np.mean(abs(mae))))
+CatboostRegressor (without any tuning) trained on 15 features having highest importance score demonstrates mean average error 2.064.
 
-data = pd.read_csv("../input/database.csv")
-data.head()
-Date	Time	Latitude	Longitude	Type	Depth	Depth Error	Depth Seismic Stations	Magnitude	Magnitude Type	Magnitude Error	Magnitude Seismic Stations	Azimuthal Gap	Horizontal Distance	Horizontal Error	Root Mean Square	ID	Source	Location Source	Magnitude Source	Status
-0	01/02/1965	13:44:18	19.246	145.616	Earthquake	131.6	NaN	NaN	6.0	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860706	ISCGEM	ISCGEM	ISCGEM	Automatic
-1	01/04/1965	11:29:49	1.863	127.352	Earthquake	80.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860737	ISCGEM	ISCGEM	ISCGEM	Automatic
-2	01/05/1965	18:05:58	-20.579	-173.972	Earthquake	20.0	NaN	NaN	6.2	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860762	ISCGEM	ISCGEM	ISCGEM	Automatic
-3	01/08/1965	18:49:43	-59.076	-23.557	Earthquake	15.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860856	ISCGEM	ISCGEM	ISCGEM	Automatic
-4	01/09/1965	13:32:50	11.938	126.427	Earthquake	15.0	NaN	NaN	5.8	MW	NaN	NaN	NaN	NaN	NaN	NaN	ISCGEM860890	ISCGEM	ISCGEM	ISCGEM	Automatic
-data.columns
-Index(['Date', 'Time', 'Latitude', 'Longitude', 'Type', 'Depth', 'Depth Error',
-       'Depth Seismic Stations', 'Magnitude', 'Magnitude Type',
-       'Magnitude Error', 'Magnitude Seismic Stations', 'Azimuthal Gap',
-       'Horizontal Distance', 'Horizontal Error', 'Root Mean Square', 'ID',
-       'Source', 'Location Source', 'Magnitude Source', 'Status'],
-      dtype='object')
-Figure out the main features from earthquake data and create a object of that features, namely, Date, Time, Latitude, Longitude, Depth, Magnitude.
+folds: [1.982 2.333 2.379 1.266 2.362]
+total: 2.064
+Feature selection
+To avoid a potential overfitting, we employ a genetic algorithm for feature selection. The genetic context is pretty straightforward. We suppose that the list of features (without duplicates) is the chromosome, whereas each gene represents one feature. n_features is the input parameter controlling the amount of genes in the chromosome.
 
-data = data[['Date', 'Time', 'Latitude', 'Longitude', 'Depth', 'Magnitude']]
-data.head()
-Date	Time	Latitude	Longitude	Depth	Magnitude
-0	01/02/1965	13:44:18	19.246	145.616	131.6	6.0
-1	01/04/1965	11:29:49	1.863	127.352	80.0	5.8
-2	01/05/1965	18:05:58	-20.579	-173.972	20.0	6.2
-3	01/08/1965	18:49:43	-59.076	-23.557	15.0	5.8
-4	01/09/1965	13:32:50	11.938	126.427	15.0	5.8
-Here, the data is random we need to scale according to inputs to the model. In this, we convert given Date and Time to Unix time which is in seconds and a numeral. This can be easily used as input for the network we built.
+import random
 
-import datetime
-import time
+class Chromosome(object):
+    def __init__(self, genes, size):
+        self.genes = random.sample(genes, size)
+We generate the population with 50 chromosomes, where each gene is generated as a random choice from initial list of features (1496 features). To accelerate the performance, we also add to population the feature set used in the baseline model.
 
-timestamp = []
-for d, t in zip(data['Date'], data['Time']):
-    try:
-        ts = datetime.datetime.strptime(d+' '+t, '%m/%d/%Y %H:%M:%S')
-        timestamp.append(time.mktime(ts.timetuple()))
-    except ValueError:
-        # print('ValueError')
-        timestamp.append('ValueError')
-timeStamp = pd.Series(timestamp)
-data['Timestamp'] = timeStamp.values
-final_data = data.drop(['Date', 'Time'], axis=1)
-final_data = final_data[final_data.Timestamp != 'ValueError']
-final_data.head()
-Latitude	Longitude	Depth	Magnitude	Timestamp
-0	19.246	145.616	131.6	6.0	-1.57631e+08
-1	1.863	127.352	80.0	5.8	-1.57466e+08
-2	-20.579	-173.972	20.0	6.2	-1.57356e+08
-3	-59.076	-23.557	15.0	5.8	-1.57094e+08
-4	11.938	126.427	15.0	5.8	-1.57026e+08
-Visualization
-Here, all the earthquakes from the database in visualized on to the world map which shows clear representation of the locations where frequency of the earthquake will be more.
+from deap import base, creator, tools
+    
 
-from mpl_toolkits.basemap import Basemap
+def init_individual(ind_class, genes=None, size=None):
+    return ind_class(genes, size)    
+    
 
-m = Basemap(projection='mill',llcrnrlat=-80,urcrnrlat=80, llcrnrlon=-180,urcrnrlon=180,lat_ts=20,resolution='c')
+genes = [
+    column for column in train.columns
+    if column not in ['target', 'seg_id']
+]
 
-longitudes = data["Longitude"].tolist()
-latitudes = data["Latitude"].tolist()
-#m = Basemap(width=12000000,height=9000000,projection='lcc',
-            #resolution=None,lat_1=80.,lat_2=55,lat_0=80,lon_0=-107.)
-x,y = m(longitudes,latitudes)
-fig = plt.figure(figsize=(12,10))
-plt.title("All affected areas")
-m.plot(x, y, "o", markersize = 2, color = 'blue')
-m.drawcoastlines()
-m.fillcontinents(color='coral',lake_color='aqua')
-m.drawmapboundary()
-m.drawcountries()
-plt.show()
-/opt/conda/lib/python3.6/site-packages/mpl_toolkits/basemap/__init__.py:1704: MatplotlibDeprecationWarning: The axesPatch function was deprecated in version 2.1. Use Axes.patch instead.
-  limb = ax.axesPatch
-/opt/conda/lib/python3.6/site-packages/mpl_toolkits/basemap/__init__.py:1707: MatplotlibDeprecationWarning: The axesPatch function was deprecated in version 2.1. Use Axes.patch instead.
-  if limb is not ax.axesPatch:
+# setting individual creator
+creator.create('FitnessMin', base.Fitness, weights=(-1,))
+creator.create('Individual', Chromosome, fitness=creator.FitnessMin)
 
-Splitting the Data
-Firstly, split the data into Xs and ys which are input to the model and output of the model respectively. Here, inputs are TImestamp, Latitude and Longitude and outputs are Magnitude and Depth. Split the Xs and ys into train and test with validation. Training dataset contains 80% and Test dataset contains 20%.
+# register callbacks
+toolbox = base.Toolbox()
+toolbox.register(
+    'individual', init_individual, creator.Individual,
+    genes=genes, size=n_features)
+toolbox.register(
+    'population', tools.initRepeat, list, toolbox.individual)
 
-X = final_data[['Timestamp', 'Latitude', 'Longitude']]
-y = final_data[['Magnitude', 'Depth']]
-from sklearn.cross_validation import train_test_split
+# raise population
+pop = toolbox.population(50)
+Standard two-point crossover operator is used for crossing two chromosomes.
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-print(X_train.shape, X_test.shape, y_train.shape, X_test.shape)
-(18727, 3) (4682, 3) (18727, 2) (4682, 3)
-/opt/conda/lib/python3.6/site-packages/sklearn/cross_validation.py:41: DeprecationWarning: This module was deprecated in version 0.18 in favor of the model_selection module into which all the refactored classes and functions are moved. Also note that the interface of the new CV iterators are different from that of this module. This module will be removed in 0.20.
-  "This module will be removed in 0.20.", DeprecationWarning)
-Here, we used the RandomForestRegressor model to predict the outputs, we see the strange prediction from this with score above 80% which can be assumed to be best fit but not due to its predicted values.
+toolbox.register('mate', tools.cxTwoPoint)
+To implement a mutation, we first generate a random amount of genes (> 1), which needs to be mutated, and then mutate these genes in order that the chromosome doesn't contain two equal genes.
 
-from sklearn.ensemble import RandomForestRegressor
+Note, that mutation operator must return a tuple.
 
-reg = RandomForestRegressor(random_state=42)
-reg.fit(X_train, y_train)
-reg.predict(X_test)
-/opt/conda/lib/python3.6/site-packages/sklearn/ensemble/weight_boosting.py:29: DeprecationWarning: numpy.core.umath_tests is an internal NumPy module and should not be imported. It will be removed in a future NumPy release.
-  from numpy.core.umath_tests import inner1d
-array([[  5.96,  50.97],
-       [  5.88,  37.8 ],
-       [  5.97,  37.6 ],
-       ...,
-       [  6.42,  19.9 ],
-       [  5.73, 591.55],
-       [  5.68,  33.61]])
-reg.score(X_test, y_test)
-0.8614799631765803
-from sklearn.model_selection import GridSearchCV
+def mutate(individual, genes=None, pb=0):
+    # maximal amount of mutated genes
+    n_mutated_max = max(1, int(len(individual) * pb))
+    # generate the random amount of mutated genes
+    n_mutated = random.randint(1, n_mutated_max)
+    # select random genes which need to be mutated
+    mutated_indexes = random.sample(
+        [index for index in range(len(individual.genes))], n_mutated)
+    # mutation
+    for index in mutated_indexes:
+        individual[index] = random.choice(genes)
+    return individual,
 
-parameters = {'n_estimators':[10, 20, 50, 100, 200, 500]}
+toolbox.register('mutate', mutate, genes=genes, pb=0.2)
+For fitness evaluation we use lightened version of CatboostRegressor with decreased number of iterations and increased learning rate. Note, that fitness evaluator must also return a tuple.
 
-grid_obj = GridSearchCV(reg, parameters)
-grid_fit = grid_obj.fit(X_train, y_train)
-best_fit = grid_fit.best_estimator_
-best_fit.predict(X_test)
-array([[  5.8888 ,  43.532  ],
-       [  5.8232 ,  31.71656],
-       [  6.0034 ,  39.3312 ],
-         ...,
-       [  6.3066 ,  23.9292 ],
-       [  5.9138 , 592.151  ],
-       [  5.7866 ,  38.9384 ]])
-best_fit.score(X_test, y_test)
-0.8749008584467053
+from catboost import CatBoostRegressor
+from sklearn.model_selection import cross_val_score
+
+model = CatBoostRegressor(
+    iterations=60, learning_rate=0.2, random_seed=0, verbose=False)
+
+def evaluate(individual, model=None, train=None, n_splits=5):
+    mae_folds = cross_val_score(
+        model, 
+        train[individual.genes], 
+        train['target'], 
+        cv=n_splits, 
+        scoring='neg_mean_absolute_error')
+    return abs(mae_folds.mean()),
+
+toolbox.register(
+    'evaluate', evaluate, model=model, train=train, n_splits=5)
+We register elitism operator to select best individuals to the next generation. The amount of the best individuals is controlling by the parameter mu in the algorithm. To prevent populations with many duplicate individuals, we overwrite the standard selBest operator.
+
+from operator import attrgetter
+
+def select_best(individuals, k, fit_attr='fitness'):
+    return sorted(set(individuals), key=attrgetter(fit_attr), reverse=True)[:k]
+
+toolbox.register('select', select_best)
+To keep track of the best individuals, we introduce a hall of fame container.
+
+hof = tools.HallOfFame(5)
+Finally, we put everything together and launch eaMuPlusLambda evolutionary algorithm. Here we set cxpb=0.2, the probability that offspring is produced by the crossover, and mutpb=0.8, the probability that offspring is produced by mutation. Mutation probability is intentionally increased to prevent a high occurrence of identical chromosomes produced by the crossover.
+
+As a result, we get the list of 15 best features selected into the model.
+
+from deap import algorithms
+
+# mu: the number of individuals to select for the next generation
+# lambda: the number of children to produce at each generation
+# cxpb: the probability that offspring is produced by crossover
+# mutpb: the probability that offspring is produced by mutation
+# ngen: the number of generations
+algorithms.eaMuPlusLambda(
+    pop, toolbox,
+    mu=10, lambda_=30, cxpb=0.2, mutpb=0.8,
+    ngen=50, stats=stats, halloffame=hof, verbose=True)
+Here is the list of 15 features accumulated in the best chromosome after 50 generations.
+
+1. ffti_av_change_rate_roll_mean_1000
+2. percentile_roll_std_30_window_50
+3. skew
+4. percentile_roll_std_10_window_100
+5. percentile_roll_std_30_window_50
+6. percentile_roll_std_20_window_1000
+7. ffti_exp_Moving_average_30000_mean
+8. range_3000_4000
+9. max_last_10000
+10. mfcc_4_avg
+11. fftr_percentile_roll_std_80_window_10000
+12. percentile_roll_std_1_window_100
+13. ffti_abs_trend
+14. av_change_abs_roll_mean_50
+15. mfcc_15_avg
+Training
+We again apply default CatboostRegressor to the found feature set and obtain mean average error 2.048.
+
+folds: [1.973 2.313 2.357 1.262 2.334]
+total: 2.048
+The observed results are used for submission.
